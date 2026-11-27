@@ -80,10 +80,7 @@ setInterval(tick,1000);
 
 function view(){
   if(S.screen==='login'){
-    app.innerHTML=head('Sign in to see the lists')+`<section class="card center"><h2>Welcome</h2><p>Sign in with your Google account to join the family wishlist.</p><button onclick="signIn()">Sign in with Google</button></section>`;
-  }else if(S.screen==='join'){
-    const free=S.members.filter(m=>!m.user_id);
-    app.innerHTML=head('One quick step')+`<section class="card center"><h2>Who are you?</h2><p>Pick your name and enter the family code.</p><select id="pm">${free.map(m=>`<option value="${m.id}">${esc(m.full_name)}</option>`).join('')}</select><input id="pc" placeholder="Family code" autocomplete="off"><p><button onclick="doJoin()">Join the family</button></p><p><button class="ghost" onclick="sb.auth.signOut()">Use a different Google account</button></p></section>`;
+    app.innerHTML=head('Enter the family code')+`<section class="card center"><h2>Who are you?</h2><p>Pick your name and enter the family code.</p><select id="pm">${(S.names||[]).map(m=>`<option value="${m.id}">${esc(m.full_name)}</option>`).join('')}</select><input id="pc" placeholder="Family code" autocomplete="off"><p><button onclick="doJoin()">Enter</button></p></section>`;
   }else if(S.screen==='main'){main()}
   else app.innerHTML=`<p style="text-align:center">${esc(S.err||'Loading…')}</p>`;
   tick();
@@ -135,21 +132,27 @@ function main(){
 
 async function load(){
   const {data:{session}}=await sb.auth.getSession();
-  if(!session){S.screen='login';return view()}
-  const r=await sb.from('members').select('*').order('full_name');
-  if(r.error){S.screen='err';S.err='Could not load: '+r.error.message;return view()}
-  S.members=r.data;
-  S.me=S.members.find(m=>m.user_id===session.user.id);
-  if(!S.me){S.screen='join';return view()}
+  S.me=null;
+  if(session){
+    const r=await sb.from('members').select('*').order('full_name');
+    if(r.error){S.screen='err';S.err='Could not load: '+r.error.message;return view()}
+    S.members=r.data;
+    S.me=S.members.find(m=>m.user_id===session.user.id);
+  }
+  if(!S.me){const n=await sb.rpc('member_names');S.names=n.data||[];S.screen='login';return view()}
   const [it,cl,cs]=await Promise.all([sb.from('items').select('*'),sb.from('claims').select('*'),sb.rpc('claimed_items')]);
   S.items=it.data||[];S.claims=cl.data||[];S.claimed=new Set(cs.data||[]);
   S.screen='main';view();
 }
 
-function signIn(){sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}})}
 async function doJoin(){
   const code=$('#pc').value.trim();
   if(!code)return say('Enter the family code');
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){
+    const a=await sb.auth.signInAnonymously();
+    if(a.error)return say(a.error.message);
+  }
   const {error}=await sb.rpc('join_as',{p_member:$('#pm').value,p_code:code});
   error?say(error.message):load();
 }
