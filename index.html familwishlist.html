@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Family Christmas Wishlist</title>
+<style>
+:root{--card:#fffaf0;--ink:#2a2a2a;--red:#c0392b;--green:#1e6b45;--gold:#e8b84a;--mute:#6b6b6b}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:radial-gradient(circle at 50% 0,#1d4d34,#0e2a1c 60%) fixed;color:#fff;min-height:100vh}
+#app{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;background:#a82d22;border:2px solid var(--gold);border-radius:16px;padding:14px 18px}
+h1{margin:0;font-size:1.5rem}.sub{margin:0;opacity:.85}
+#cd{display:flex;gap:8px}#cd div{background:var(--card);color:var(--red);border-radius:10px;padding:6px 10px;text-align:center;min-width:54px}
+#cd b{display:block;font-size:1.3rem}#cd small{font-size:.7rem;color:var(--mute)}
+blockquote{margin:14px 4px;font-family:Georgia,serif;font-style:italic;text-align:center;color:#ffe9b0}
+cite{display:block;font-size:.85rem;opacity:.8;margin-top:2px;font-style:normal}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.card{background:var(--card);color:var(--ink);border-radius:16px;padding:14px 16px}
+.card h2{margin:0 0 8px;font-size:1.15rem;color:var(--green)}.card h2 small{color:var(--mute);font-weight:400}
+.it{padding:10px 0;border-top:1px solid #e6dcc5}.note{margin:2px 0 0;font-size:.88rem;color:var(--mute)}
+.star{color:#d99a00}.st{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+button{font:inherit;border:0;border-radius:10px;padding:6px 12px;background:var(--red);color:#fff;cursor:pointer}
+button.ghost{background:transparent;color:var(--green);border:1px solid var(--green)}
+.tag{background:var(--green);color:#fff;border-radius:8px;padding:2px 10px;font-size:.85rem}.ok{color:var(--green);font-size:.9rem}
+input,select{font:inherit;width:100%;padding:8px 10px;margin:3px 0;border:1px solid #cfc3a8;border-radius:8px;background:#fff;color:var(--ink)}
+input[type=checkbox]{width:auto;margin-right:6px}
+a{color:var(--red)}.me{border:2px dashed var(--gold)}.hint{margin:0 0 6px;font-size:.85rem;color:var(--mute)}
+.banner{background:var(--gold);color:#3a2a00;border-radius:12px;padding:10px;text-align:center;margin-top:12px}
+.foot{text-align:center;margin-top:18px}.foot button{margin:0 4px}
+.center{max-width:420px;margin:16px auto 0;text-align:center}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:9;max-width:90vw}
+.snow i{position:fixed;top:-24px;color:#fff;opacity:.7;pointer-events:none;animation:f linear infinite}
+@keyframes f{to{transform:translateY(110vh) rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.snow{display:none}}
+</style>
+</head>
+<body>
+<div class="snow" id="snow"></div>
+<main id="app"><p style="text-align:center">Loading…</p></main>
+<div id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SB_URL='https://qaloyeubghpfdwnpldqm.supabase.co';
+const SB_KEY='sb_publishable_vYhFYWAeOXybb67OHx-T4A_yEzRB6N2';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const XMAS=new Date(2026,11,25);
+const CLOSE=new Date('2026-12-27T00:00:00-06:00');
+const VERSES=[
+['For unto you is born this day in the city of David a Saviour, which is Christ the Lord.','Luke 2:11'],
+['And the angel said unto them, Fear not: for, behold, I bring you good tidings of great joy, which shall be to all people.','Luke 2:10'],
+['Glory to God in the highest, and on earth peace, good will toward men.','Luke 2:14'],
+['For unto us a child is born, unto us a son is given: and his name shall be called Wonderful, Counsellor, The mighty God, The everlasting Father, The Prince of Peace.','Isaiah 9:6'],
+['Behold, a virgin shall be with child, and shall bring forth a son, and they shall call his name Emmanuel, which being interpreted is, God with us.','Matthew 1:23'],
+['For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.','John 3:16'],
+['Thanks be unto God for his unspeakable gift.','2 Corinthians 9:15'],
+['Every good gift and every perfect gift is from above, and cometh down from the Father of lights, with whom is no variableness, neither shadow of turning.','James 1:17']
+];
+const V=VERSES[Math.floor(Math.random()*VERSES.length)];
+const S={screen:'loading',members:[],items:[],claims:[],claimed:new Set()};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const first=n=>String(n||'').split(' ')[0];
+const nm=id=>(S.members.find(m=>m.id===id)||{}).full_name||'Someone';
+const ini=n=>String(n).split(' ').map(w=>w[0]).join('').slice(0,2);
+const app=$('#app');
+
+function say(msg){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(say.t);say.t=setTimeout(()=>t.style.display='none',4000)}
+
+function head(sub){return `<header><div><h1>The Family Wishlist</h1><p class="sub">${sub}</p></div><div id="cd"></div></header><blockquote>“${esc(V[0])}”<cite>${esc(V[1])}, KJV</cite></blockquote>`}
+
+function tick(){
+  const el=$('#cd');if(!el)return;
+  const d=XMAS-Date.now();
+  if(d<=0){el.innerHTML='<div><b>Merry Christmas!</b></div>';return}
+  const p=(n,l)=>`<div><b>${n}</b><small>${l}</small></div>`;
+  el.innerHTML=p(Math.floor(d/864e5),'days')+p(Math.floor(d/36e5)%24,'hrs')+p(Math.floor(d/6e4)%60,'min')+p(Math.floor(d/1e3)%60,'sec');
+}
+setInterval(tick,1000);
+
+function view(){
+  if(S.screen==='login'){
+    app.innerHTML=head('Sign in to see the lists')+`<section class="card center"><h2>Welcome</h2><p>Sign in with your Google account to join the family wishlist.</p><button onclick="signIn()">Sign in with Google</button></section>`;
+  }else if(S.screen==='join'){
+    const free=S.members.filter(m=>!m.user_id);
+    app.innerHTML=head('One quick step')+`<section class="card center"><h2>Who are you?</h2><p>Pick your name and enter the family code.</p><select id="pm">${free.map(m=>`<option value="${m.id}">${esc(m.full_name)}</option>`).join('')}</select><input id="pc" placeholder="Family code" autocomplete="off"><p><button onclick="doJoin()">Join the family</button></p><p><button class="ghost" onclick="sb.auth.signOut()">Use a different Google account</button></p></section>`;
+  }else if(S.screen==='main'){main()}
+  else app.innerHTML=`<p style="text-align:center">${esc(S.err||'Loading…')}</p>`;
+  tick();
+}
+
+function link(i){
+  const t=esc(i.title);
+  return /^https?:\/\//i.test(i.link||'')?`<a href="${esc(i.link)}" target="_blank" rel="noopener noreferrer">${t}</a>`:t;
+}
+
+function status(i,open){
+  const cl=S.claims.filter(c=>c.item_id===i.id);
+  const mine=cl.find(c=>c.member_id===S.me.id);
+  const sp=cl.filter(c=>c.mode==='split');
+  let t='',b='';
+  if(mine&&mine.mode==='solo'){
+    t='<span class="ok">You’re getting this</span>';
+    if(open)b=`<button class="ghost" onclick="unclaim('${i.id}')">Undo</button>`;
+  }else if(sp.length){
+    t=`<span class="ok">Splitting: ${esc(sp.map(c=>first(nm(c.member_id))).join(', '))}</span>`;
+    if(open)b=mine?`<button class="ghost" onclick="unclaim('${i.id}')">Leave split</button>`:`<button onclick="claim('${i.id}','split')">Join split</button>`;
+  }else if(S.claimed.has(i.id)){
+    t='<span class="tag">Claimed</span>';
+  }else if(open){
+    b=`<button onclick="claim('${i.id}','solo')">Claim</button><button class="ghost" onclick="claim('${i.id}','split')">Split with others</button>`;
+  }
+  return `<div class="st">${t}${b}</div>`;
+}
+
+function sorted(list){return list.slice().sort((a,b)=>(b.is_most_wanted-a.is_most_wanted)||(a.created_at<b.created_at?-1:1))}
+
+function card(m,open){
+  const its=sorted(S.items.filter(i=>i.owner_id===m.id));
+  return `<section class="card"><h2>${esc(ini(m.full_name))} · ${esc(first(m.full_name))}</h2>${its.length?its.map(i=>`<div class="it"><div>${i.is_most_wanted?'<b class="star">★ </b>':''}${link(i)}</div>${i.note?`<p class="note">${esc(i.note)}</p>`:''}${status(i,open)}</div>`).join(''):'<p class="note">No items yet.</p>'}</section>`;
+}
+
+function mine(open){
+  const its=sorted(S.items.filter(i=>i.owner_id===S.me.id));
+  const row=i=>open?`<div class="it"><input id="t-${i.id}" value="${esc(i.title)}" placeholder="Item"><input id="l-${i.id}" value="${esc(i.link)}" placeholder="Link (optional)"><input id="n-${i.id}" value="${esc(i.note)}" placeholder="Note (optional)"><label><input type="checkbox" id="s-${i.id}" ${i.is_most_wanted?'checked':''}>Most wanted</label><div class="st"><button onclick="save('${i.id}')">Save</button><button class="ghost" onclick="del('${i.id}')">Remove</button></div></div>`:`<div class="it">${i.is_most_wanted?'<b class="star">★ </b>':''}${link(i)}</div>`;
+  const add=open&&its.length<6?`<div class="it"><b>Add an item</b><input id="nt" placeholder="Item"><input id="nl" placeholder="Link (optional)"><input id="nn" placeholder="Note (optional)"><label><input type="checkbox" id="ns">Most wanted</label><div class="st"><button onclick="addItem()">Add</button></div></div>`:'';
+  return `<section class="card me"><h2>Your list <small>${its.length}/6</small></h2><p class="hint">Claims on your list stay hidden from you.</p>${its.map(row).join('')}${add}</section>`;
+}
+
+function main(){
+  const open=Date.now()<CLOSE;
+  const others=S.members.filter(m=>m.id!==S.me.id);
+  app.innerHTML=head(`Hi ${esc(first(S.me.full_name))}`)+(open?'':'<p class="banner">Lists are closed after Boxing Day. Merry Christmas!</p>')+`<div class="grid" style="margin-top:14px">${others.map(m=>card(m,open)).join('')}${mine(open)}</div><p class="foot"><button onclick="load()">Refresh</button><button class="ghost" style="color:#fff;border-color:#fff" onclick="sb.auth.signOut()">Sign out</button></p>`;
+}
+
+async function load(){
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){S.screen='login';return view()}
+  const r=await sb.from('members').select('*').order('full_name');
+  if(r.error){S.screen='err';S.err='Could not load: '+r.error.message;return view()}
+  S.members=r.data;
+  S.me=S.members.find(m=>m.user_id===session.user.id);
+  if(!S.me){S.screen='join';return view()}
+  const [it,cl,cs]=await Promise.all([sb.from('items').select('*'),sb.from('claims').select('*'),sb.rpc('claimed_items')]);
+  S.items=it.data||[];S.claims=cl.data||[];S.claimed=new Set(cs.data||[]);
+  S.screen='main';view();
+}
+
+function signIn(){sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}})}
+async function doJoin(){
+  const code=$('#pc').value.trim();
+  if(!code)return say('Enter the family code');
+  const {error}=await sb.rpc('join_as',{p_member:$('#pm').value,p_code:code});
+  error?say(error.message):load();
+}
+async function addItem(){
+  const title=$('#nt').value.trim();
+  if(!title)return say('Enter an item name');
+  const {error}=await sb.from('items').insert({owner_id:S.me.id,title,link:$('#nl').value.trim()||null,note:$('#nn').value.trim()||null,is_most_wanted:$('#ns').checked});
+  error?say(error.message):load();
+}
+async function save(id){
+  const title=$('#t-'+id).value.trim();
+  if(!title)return say('Item name can’t be empty');
+  const {error}=await sb.from('items').update({title,link:$('#l-'+id).value.trim()||null,note:$('#n-'+id).value.trim()||null,is_most_wanted:$('#s-'+id).checked}).eq('id',id);
+  error?say(error.message):(say('Saved'),load());
+}
+async function del(id){
+  if(!confirm('Remove this item?'))return;
+  const {error}=await sb.from('items').delete().eq('id',id);
+  error?say(error.message):load();
+}
+async function claim(id,mode){
+  const {error}=await sb.from('claims').insert({item_id:id,member_id:S.me.id,mode});
+  if(error)say(error.code==='23505'?'Someone just claimed that one.':error.message);
+  load();
+}
+async function unclaim(id){
+  await sb.from('claims').delete().eq('item_id',id).eq('member_id',S.me.id);
+  load();
+}
+
+sb.auth.onAuthStateChange(e=>{if(e==='SIGNED_OUT')load()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.screen==='main'&&!/INPUT|SELECT/.test(document.activeElement.tagName))load()});
+for(let i=0;i<36;i++){const s=document.createElement('i');s.textContent='❄';s.style.left=Math.random()*100+'vw';s.style.fontSize=(10+Math.random()*14)+'px';s.style.animationDuration=(8+Math.random()*10)+'s';s.style.animationDelay=(-Math.random()*18)+'s';$('#snow').appendChild(s)}
+load();
+</script>
+</body>
+</html>
